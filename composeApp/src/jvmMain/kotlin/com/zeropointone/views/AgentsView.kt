@@ -17,23 +17,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zeropointone.engine.AgentSnapshot
 
-private val LevelColors = mapOf(
-    1 to Color(0xFF4CAF50), // producer  - green
-    2 to Color(0xFFFFEB3B), // herbivore - yellow
-    3 to Color(0xFFFF9800), // small carnivore - orange
-    4 to Color(0xFFF44336), // large carnivore - red
-    5 to Color(0xFF9C27B0), // apex predator - purple
-)
-
-private val LevelLabels = mapOf(
-    1 to "L1 Producers",
-    2 to "L2 Herbivores",
-    3 to "L3 Small carniv.",
-    4 to "L4 Large carniv.",
-    5 to "L5 Apex",
-)
-
-private fun levelColor(level: Int): Color = LevelColors[level] ?: Color.Gray
 private fun levelSizeDp(level: Int): Int = 4 + level * 2
 
 @Composable
@@ -62,7 +45,7 @@ fun PopulationOverlay(populations: Map<Int, Int>, tick: Long) {
             .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(6.dp))
             .padding(8.dp)
     ) {
-        Text("tick $tick", color = Color.White, fontSize = 11.sp)
+        Text("tick $tick   •   total ${populations.values.sum()}", color = Color.White, fontSize = 11.sp)
         for (level in 1..5) {
             Text(
                 text = "${LevelLabels[level]}: ${populations[level] ?: 0}",

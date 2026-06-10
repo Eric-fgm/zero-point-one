@@ -33,21 +33,29 @@ data class SimulationConfig(
     val params: Map<Int, SpeciesParams>,
     val initialPopulations: Map<Int, Int>,
     val producerCarryingCapacity: Int,
+    /** Fraction of prey energy a predator gains on consumption. The "10% rule"; default 0.10. */
+    val energyTransferYield: Double,
     val seed: Long,
     val speed: Float,
 ) {
     fun params(level: Int): SpeciesParams =
         params[level] ?: error("No SpeciesParams configured for trophic level $level")
 
-    /** Maps the UI speed slider (0..1) to a per-tick delay: slow (200 ms) .. fast (20 ms). */
-    fun tickDelayMillis(): Long = ((1f - speed.coerceIn(0f, 1f)) * 180f + 20f).toLong()
-
     companion object {
+        /** Maps a speed slider value (0..1) to a per-tick delay: slow (200 ms) .. fast (20 ms). */
+        fun tickDelayMillis(speed: Float): Long = ((1f - speed.coerceIn(0f, 1f)) * 180f + 20f).toLong()
+
         /**
          * Reasonable default parameters. These are a starting point, not tuned for any
          * particular outcome: under the hard 10% rule levels 4-5 are intentionally fragile.
          */
-        fun default(width: Int, height: Int, speed: Float = 0f, seed: Long = 42L): SimulationConfig {
+        fun default(
+            width: Int,
+            height: Int,
+            speed: Float = 0f,
+            seed: Long = 42L,
+            energyTransferYield: Double = 0.10,
+        ): SimulationConfig {
             val area = width.toLong() * height.toLong()
             val carryingCapacity = (area / 2500L).toInt().coerceIn(60, 500)
             return SimulationConfig(
@@ -81,6 +89,7 @@ data class SimulationConfig(
                 ),
                 initialPopulations = mapOf(1 to 80, 2 to 45, 3 to 20, 4 to 9, 5 to 4),
                 producerCarryingCapacity = carryingCapacity,
+                energyTransferYield = energyTransferYield,
                 seed = seed,
                 speed = speed,
             )

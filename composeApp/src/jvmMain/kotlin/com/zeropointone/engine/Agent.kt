@@ -83,8 +83,8 @@ sealed class Agent(var position: Position, var energy: Double) {
                         position = position.randomNearby(ctx.rng, p.moveSpeed, width, height)
 
                     position.distanceTo(prey.position) <= CONSUME_DISTANCE -> {
-                        // Consumption event: gain 10% of the prey's energy, prey dies.
-                        energy = min(p.maxEnergy, energy + ENERGY_TRANSFER_YIELD * prey.energy)
+                        // Consumption event: gain the configured yield (the 10% rule) of the prey's energy, prey dies.
+                        energy = min(p.maxEnergy, energy + ctx.config.energyTransferYield * prey.energy)
                         ctx.kill(prey)
                     }
 
@@ -102,8 +102,8 @@ sealed class Agent(var position: Position, var energy: Double) {
     }
 
     companion object {
-        /** The ten percent law: a predator gains exactly 10% of consumed prey energy. */
-        const val ENERGY_TRANSFER_YIELD = 0.10
+        // The ten-percent law's yield now lives in SimulationConfig.energyTransferYield so it can be
+        // varied as the headline experimental parameter (e.g. 5% / 10% / 20% / 30%).
 
         /** Pixel distance at which a predator is close enough to consume its prey. */
         const val CONSUME_DISTANCE = 14.0

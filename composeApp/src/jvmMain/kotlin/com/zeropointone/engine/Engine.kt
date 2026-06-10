@@ -29,6 +29,15 @@ class Engine(val terrain: Terrain, private val config: SimulationConfig) {
     private val agents = ArrayList<Agent>()
     private var tick = 0L
 
+    /** Full per-tick population history (kept for CSV export). */
+    private val history = ArrayList<PopulationSample>()
+
+    /** Live playback speed in [0, 1]. May be changed at any time while the loop is running. */
+    @Volatile var speed: Float = config.speed
+
+    /** When true the loop holds the current state without advancing. Toggled live by the UI. */
+    @Volatile var paused: Boolean = false
+
     private val _snapshot = MutableStateFlow(SimulationSnapshot.EMPTY)
     val snapshot: StateFlow<SimulationSnapshot> = _snapshot.asStateFlow()
 
@@ -37,10 +46,13 @@ class Engine(val terrain: Terrain, private val config: SimulationConfig) {
         if (job != null) return
         initialize()
         job = scope.launch {
-            val delayMillis = config.tickDelayMillis()
             while (isActive) {
+                if (paused) {
+                    delay(60L)
+                    continue
+                }
                 advance()
-                delay(delayMillis)
+                delay(SimulationConfig.tickDelayMillis(speed))
             }
         }
     }
@@ -49,13 +61,27 @@ class Engine(val terrain: Terrain, private val config: SimulationConfig) {
         job?.cancel()
         job = null
         agents.clear()
+        history.clear()
     }
 
     /** Seed the initial populations and publish tick 0. Call once before [advance] for headless runs. */
     fun initialize() {
         if (agents.isEmpty()) spawnInitial()
         tick = 0L
+        history.clear()
         publish(0L)
+    }
+
+    /** Full per-tick population history as CSV text (header: tick,L1..L5,total). */
+    fun populationHistoryCsv(): String {
+        val sb = StringBuilder("tick,L1,L2,L3,L4,L5,total\n")
+        for (sample in history) {
+            val counts = (1..5).map { sample.counts[it] ?: 0 }
+            sb.append(sample.tick)
+            counts.forEach { sb.append(',').append(it) }
+            sb.append(',').append(counts.sum()).append('\n')
+        }
+        return sb.toString()
     }
 
     /** Run exactly one tick and return the resulting snapshot. Usable headlessly (e.g. M4 batch runs). */
@@ -95,12 +121,21 @@ class Engine(val terrain: Terrain, private val config: SimulationConfig) {
     }
 
     private fun publish(tick: Long) {
+        val counts = agents.groupingBy { it.level }.eachCount()
+        history.add(PopulationSample(tick, counts))
+        val from = (history.size - CHART_WINDOW).coerceAtLeast(0)
         _snapshot.value = SimulationSnapshot(
             tick = tick,
             agents = agents.map {
                 AgentSnapshot(it.id, it.level, it.position.x, it.position.y, it.energyRatio(config))
             },
-            populations = agents.groupingBy { it.level }.eachCount(),
+            populations = counts,
+            history = ArrayList(history.subList(from, history.size)),
         )
+    }
+
+    private companion object {
+        /** Number of most-recent ticks shown in the in-app chart. */
+        const val CHART_WINDOW = 600
     }
 }
