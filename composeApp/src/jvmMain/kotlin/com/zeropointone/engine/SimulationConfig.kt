@@ -26,6 +26,21 @@ data class SpeciesParams(
 )
 
 /**
+ * Optional consumer steering behaviours, layered on top of the basic flee/hunt rules.
+ * Both are toggleable so experiments can measure their effect (e.g. does herding raise the
+ * survival probability of the apex predator?).
+ */
+data class BehaviorConfig(
+    /** Prey/peers form herds: cohesion toward same-level neighbours, with separation to avoid stacking. */
+    val herding: Boolean = true,
+    /** Predators steer toward prey *density* (inverse-distance weighted) rather than the single nearest. */
+    val gradientForaging: Boolean = true,
+    val cohesionWeight: Double = 0.6,
+    val separationWeight: Double = 0.9,
+    val separationRadius: Double = 18.0,
+)
+
+/**
  * Full configuration for one simulation run. Centralising every tunable here keeps the
  * ecological logic decoupled from hard-coded numbers and makes parameter sweeps (M4) easy.
  */
@@ -37,6 +52,7 @@ data class SimulationConfig(
     val energyTransferYield: Double,
     val seed: Long,
     val speed: Float,
+    val behavior: BehaviorConfig = BehaviorConfig(),
 ) {
     fun params(level: Int): SpeciesParams =
         params[level] ?: error("No SpeciesParams configured for trophic level $level")
@@ -55,6 +71,8 @@ data class SimulationConfig(
             speed: Float = 0f,
             seed: Long = 42L,
             energyTransferYield: Double = 0.10,
+            herding: Boolean = true,
+            gradientForaging: Boolean = true,
         ): SimulationConfig {
             val area = width.toLong() * height.toLong()
             val carryingCapacity = (area / 2500L).toInt().coerceIn(60, 500)
@@ -92,6 +110,7 @@ data class SimulationConfig(
                 energyTransferYield = energyTransferYield,
                 seed = seed,
                 speed = speed,
+                behavior = BehaviorConfig(herding = herding, gradientForaging = gradientForaging),
             )
         }
     }

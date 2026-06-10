@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.Slider
+import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,11 +40,15 @@ data class Options(
     val metabolicMultiplier: Float,
     /** Fraction of prey energy gained on consumption — the "10% rule" as a tunable. */
     val energyTransferYield: Double,
+    val herding: Boolean,
+    val gradientForaging: Boolean,
 )
 
 /** Builds a full simulation config from the chosen options, keeping the default species params. */
 fun Options.toConfig(): SimulationConfig {
-    val base = SimulationConfig.default(pixelWidth, pixelHeight, speed, seed, energyTransferYield)
+    val base = SimulationConfig.default(
+        pixelWidth, pixelHeight, speed, seed, energyTransferYield, herding, gradientForaging,
+    )
     return base.copy(
         initialPopulations = initialPopulations,
         producerCarryingCapacity = carryingCapacity ?: base.producerCarryingCapacity,
@@ -74,6 +80,8 @@ fun Sidebar(
     var carrying by remember { mutableStateOf("") } // blank = auto
     var metabolism by remember { mutableStateOf(1f) }
     var transfer by remember { mutableStateOf(0.10f) } // the 10% rule, tunable
+    var herding by remember { mutableStateOf(true) }
+    var gradientForaging by remember { mutableStateOf(true) }
     var speed by remember { mutableStateOf(0.3f) }
 
     Column(
@@ -112,6 +120,11 @@ fun Sidebar(
         Text("Metabolism  ×${formatTwo(metabolism)}", fontSize = 13.sp)
         Slider(value = metabolism, onValueChange = { metabolism = it }, valueRange = 0.5f..1.5f)
 
+        Divider(Modifier.fillMaxWidth().padding(vertical = 4.dp))
+        Text("Behaviour", fontSize = 13.sp)
+        ToggleRow("Herding", herding) { herding = it }
+        ToggleRow("Gradient foraging", gradientForaging) { gradientForaging = it }
+
         Text("Speed", fontSize = 13.sp)
         Slider(
             value = speed,
@@ -138,6 +151,8 @@ fun Sidebar(
                         carryingCapacity = carrying.toIntOrNull(),
                         metabolicMultiplier = metabolism,
                         energyTransferYield = transfer.toDouble(),
+                        herding = herding,
+                        gradientForaging = gradientForaging,
                     )
                 )
             },
@@ -156,6 +171,14 @@ fun Sidebar(
             Text("Export CSV")
         }
         exportStatus?.let { Text(it, fontSize = 10.sp) }
+    }
+}
+
+@Composable
+private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, modifier = Modifier.weight(1f), fontSize = 13.sp)
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

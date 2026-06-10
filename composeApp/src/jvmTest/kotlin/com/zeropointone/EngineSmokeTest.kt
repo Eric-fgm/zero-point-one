@@ -58,4 +58,21 @@ class EngineSmokeTest {
         assertEquals(52, lines.size, "header + ticks 0..50 = 52 lines")
         engine.destroy()
     }
+
+    @Test
+    fun herdingToggleChangesTrajectory() {
+        fun totalsSeries(herding: Boolean): List<Int> {
+            val config = SimulationConfig.default(600, 400, speed = 1f, seed = 11L, herding = herding)
+            val engine = Engine(Terrain(600, 400), config)
+            engine.initialize()
+            val totals = ArrayList<Int>()
+            repeat(150) { totals.add(engine.advance().populations.values.sum()) }
+            engine.destroy()
+            return totals
+        }
+        assertTrue(
+            totalsSeries(herding = true) != totalsSeries(herding = false),
+            "enabling herding should change the population trajectory",
+        )
+    }
 }

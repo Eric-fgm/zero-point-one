@@ -43,3 +43,20 @@ compose.desktop {
         }
     }
 }
+
+// Headless parameter-sweep runner (no GUI). Writes CSVs to ./results.
+//   ./gradlew :composeApp:sweep
+//   ./gradlew :composeApp:sweep -PsweepArgs="1500 20"   (ticks, seeds)
+tasks.register<JavaExec>("sweep") {
+    group = "application"
+    description = "Run headless parameter sweeps and write CSV results to ./results"
+    val jvmJar = tasks.named("jvmJar")
+    dependsOn(jvmJar)
+    classpath = files(jvmJar) + configurations.getByName("jvmRuntimeClasspath")
+    mainClass.set("com.zeropointone.experiments.SweepKt")
+    workingDir = rootProject.projectDir
+    notCompatibleWithConfigurationCache("JavaExec sweep runs ad-hoc experiments")
+    if (project.hasProperty("sweepArgs")) {
+        args((project.property("sweepArgs") as String).split(" ").filter { it.isNotBlank() })
+    }
+}
