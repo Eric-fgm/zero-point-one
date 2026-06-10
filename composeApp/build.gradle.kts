@@ -34,7 +34,7 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "com.zeropointone.zeropointone.MainKt"
+        mainClass = "com.zeropointone.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
