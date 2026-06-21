@@ -242,8 +242,8 @@ Wszystkie parametry oprócz **Speed**, **Pause** i **Export** są stosowane dopi
 | **Grass capacity** (puste = auto) | Maks. liczba producentów (pojemność środowiska) | Większa pojemność = większa **baza energetyczna** ⇒ więcej poziomów może przetrwać. Puste = auto z powierzchni (`powierzchnia/2500`, zakres 60–500). |
 | **Energy transfer %** | Reguła 10% — ile % energii ofiary trafia do drapieżnika | **Najważniejszy parametr.** Wyższy % (np. 20–30) = mniejsze straty na szczeblu ⇒ wyższe poziomy żyją **znacznie dłużej**. 5% = niemal natychmiastowy kolaps góry. |
 | **Metabolism ×** | Mnożnik tempa metabolizmu konsumentów (0.5–1.5) | Niższy = wolniejsze głodzenie ⇒ **łatwiejsze przetrwanie** (zwłaszcza górnych poziomów). Wyższy = szybsze wymieranie. |
-| **Herding** (przełącznik) | Stadność (kohezja + separacja) | Włączona = ofiary tworzą **stada**; nieco większa przeżywalność biomasy i poziomu L4 (efekt rozcieńczenia drapieżnictwa). |
-| **Gradient foraging** (przełącznik) | Żerowanie ku zagęszczeniu ofiar | Włączone = drapieżniki celują w **skupiska** ofiar, a nie w pojedyncze sztuki ⇒ skuteczniejsze polowanie, dłużej utrzymują się poziomy 3–4. |
+| **Herding** (przełącznik) | Stadność (kohezja + separacja) | Włączona = ofiary tworzą **stada**. Zmienia głównie **strukturę przestrzenną**; wpływ na *czas przetrwania* mieści się w rozrzucie między ziarnami (patrz ANALIZA §2.2 — różnice < ±1 SD). |
+| **Gradient foraging** (przełącznik) | Żerowanie ku zagęszczeniu ofiar | Włączone = drapieżniki celują w **skupiska** ofiar, a nie w pojedyncze sztuki. Również nie daje istotnej zmiany trwałości poziomów (efekt w granicach szumu). |
 | **Speed** (suwak, na żywo) | Prędkość symulacji | W prawo = szybsze kroki (do ~20 ms/krok), w lewo = wolniejsze (do ~200 ms/krok). Nie wpływa na wynik, tylko na tempo obserwacji. |
 | **Run / Restart** | Start / restart z bieżącymi parametrami | Tworzy nową symulację (kasuje poprzednią). |
 | **Pause / Resume** | Pauza / wznowienie | Zatrzymuje czas bez utraty stanu — wygodne do oglądania konkretnej chwili. |
@@ -270,11 +270,13 @@ a sam kształt piramidy (rzędy wielkości między poziomami) jest dodatkową in
   zbyt wcześnie, więc L5 powoli głodzi się na energii początkowej. To bezpośrednia ilustracja
   „kruchości drapieżnika szczytowego" wynikającej z reguły 10%.
 
-### 8.3. Wstępne wyniki (z eksperymentów porównawczych)
-- Włączenie stadności i żerowania gradientowego wydłuża przeciętną przeżywalność **L4** o ~12%
-  i zwiększa ocalałą biomasę — ale **nie ratuje L5** (jego los zależy od poziomu poniżej).
-- Zwiększanie **Energy transfer %** jest najsilniejszą dźwignią pozwalającą utrzymać wyższe
-  poziomy dłużej — to materiał na kluczowy wykres w raporcie (przeżywalność L5 vs. wydajność transferu).
+### 8.3. Wyniki (sweep M4 — 30 ziaren, 1500 kroków; szczegóły i wykresy w `ANALIZA.md` §2)
+- **Metabolizm** to najsilniejsza i najbardziej odporna dźwignia: niższy koszt życia drastycznie
+  wydłuża trwałość górnych poziomów (L5: 1136 przy ×0.6 vs 459 przy ×1.4).
+- **Energy transfer %** wyraźnie wydłuża trwałość szczytu (L5: 614 → 853 dla 5% → 30%) i środka
+  (L3) — to materiał na kluczowy wykres (przeżywalność L5 vs. wydajność transferu).
+- **Stadność/żerowanie gradientowe** zmieniają strukturę przestrzenną, ale **nie** zmieniają czasu
+  przetrwania w sposób istotny — różnice toną w rozrzucie między ziarnami (±1 SD). I tak **nie ratują L5**.
 
 ### 8.4. Format pliku CSV
 Eksport zapisuje liczebności na każdy krok:

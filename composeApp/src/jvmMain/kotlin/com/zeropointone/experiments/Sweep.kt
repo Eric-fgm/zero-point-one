@@ -42,13 +42,29 @@ private fun runOnce(config: SimulationConfig, ticks: Int): RunResult {
 }
 
 private fun mean(values: List<Double>): Double = if (values.isEmpty()) 0.0 else values.sum() / values.size
+
+/** Sample standard deviation (n-1). Returns 0 for fewer than two samples. */
+private fun std(values: List<Double>, m: Double): Double {
+    if (values.size < 2) return 0.0
+    return Math.sqrt(values.sumOf { (it - m) * (it - m) } / (values.size - 1))
+}
+
 private fun round2(v: Double): Double = Math.round(v * 100.0) / 100.0
 
-/** Aggregate runs into per-level survival fraction and mean persistence tick. */
-private fun aggregate(results: List<RunResult>): Pair<Map<Int, Double>, Map<Int, Double>> {
+/** Aggregated metrics across seeds: survival fraction, and persistence mean ± std (per level). */
+private data class Aggregated(
+    val survival: Map<Int, Double>,
+    val persistMean: Map<Int, Double>,
+    val persistStd: Map<Int, Double>,
+)
+
+/** Aggregate runs into per-level survival fraction and persistence mean ± std over the seeds. */
+private fun aggregate(results: List<RunResult>): Aggregated {
     val survival = (1..5).associateWith { lvl -> mean(results.map { if (it.survived[lvl] == true) 1.0 else 0.0 }) }
-    val persistence = (1..5).associateWith { lvl -> mean(results.map { it.lastAlive[lvl]!!.toDouble() }) }
-    return survival to persistence
+    val persistVals = (1..5).associateWith { lvl -> results.map { it.lastAlive[lvl]!!.toDouble() } }
+    val persistMean = persistVals.mapValues { mean(it.value) }
+    val persistStd = persistVals.mapValues { std(it.value, persistMean.getValue(it.key)) }
+    return Aggregated(survival, persistMean, persistStd)
 }
 
 fun main(args: Array<String>) {
@@ -63,34 +79,36 @@ fun main(args: Array<String>) {
     println("\n[exp1] survival vs energy-transfer yield")
     val yields = listOf(0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30)
     buildString {
-        append("yield,L1_surv,L2_surv,L3_surv,L4_surv,L5_surv,L1_persist,L2_persist,L3_persist,L4_persist,L5_persist\n")
+        append("yield,L1_surv,L2_surv,L3_surv,L4_surv,L5_surv,L1_persist,L2_persist,L3_persist,L4_persist,L5_persist,L1_persist_std,L2_persist_std,L3_persist_std,L4_persist_std,L5_persist_std\n")
         for (y in yields) {
             val results = seeds.map { seed ->
                 runOnce(SimulationConfig.default(WIDTH, HEIGHT, seed = seed, energyTransferYield = y), ticks)
             }
-            val (surv, persist) = aggregate(results)
+            val agg = aggregate(results)
             append(y)
-            for (l in 1..5) append(',').append(round2(surv[l]!!))
-            for (l in 1..5) append(',').append(round2(persist[l]!!))
+            for (l in 1..5) append(',').append(round2(agg.survival[l]!!))
+            for (l in 1..5) append(',').append(round2(agg.persistMean[l]!!))
+            for (l in 1..5) append(',').append(round2(agg.persistStd[l]!!))
             append('\n')
-            println("  yield=${"%.2f".format(y)}  L3/L4/L5 survival=${round2(surv[3]!!)}/${round2(surv[4]!!)}/${round2(surv[5]!!)}  L5 persist=${round2(persist[5]!!)}")
+            println("  yield=${"%.2f".format(y)}  L5 persist=${round2(agg.persistMean[5]!!)}±${round2(agg.persistStd[5]!!)}")
         }
     }.let { File(outDir, "exp1_yield.csv").writeText(it) }
 
     // Experiment 2 — effect of the optional behaviours (herding × gradient foraging).
     println("\n[exp2] survival vs behaviours (herding × gradient)")
     buildString {
-        append("herding,gradient,L3_surv,L4_surv,L5_surv,L3_persist,L4_persist,L5_persist\n")
+        append("herding,gradient,L2_surv,L3_surv,L4_surv,L5_surv,L2_persist,L3_persist,L4_persist,L5_persist,L2_persist_std,L3_persist_std,L4_persist_std,L5_persist_std\n")
         for (herding in listOf(false, true)) for (gradient in listOf(false, true)) {
             val results = seeds.map { seed ->
                 runOnce(SimulationConfig.default(WIDTH, HEIGHT, seed = seed, herding = herding, gradientForaging = gradient), ticks)
             }
-            val (surv, persist) = aggregate(results)
+            val agg = aggregate(results)
             append("$herding,$gradient")
-            for (l in 3..5) append(',').append(round2(surv[l]!!))
-            for (l in 3..5) append(',').append(round2(persist[l]!!))
+            for (l in 2..5) append(',').append(round2(agg.survival[l]!!))
+            for (l in 2..5) append(',').append(round2(agg.persistMean[l]!!))
+            for (l in 2..5) append(',').append(round2(agg.persistStd[l]!!))
             append('\n')
-            println("  herding=$herding gradient=$gradient  L4 persist=${round2(persist[4]!!)}  L5 persist=${round2(persist[5]!!)}")
+            println("  herding=$herding gradient=$gradient  L4 persist=${round2(agg.persistMean[4]!!)}±${round2(agg.persistStd[4]!!)}")
         }
     }.let { File(outDir, "exp2_behaviours.csv").writeText(it) }
 
@@ -98,7 +116,7 @@ fun main(args: Array<String>) {
     println("\n[exp3] survival vs metabolism multiplier")
     val metabolisms = listOf(0.6, 0.8, 1.0, 1.2, 1.4)
     buildString {
-        append("metabolism,L3_surv,L4_surv,L5_surv,L3_persist,L4_persist,L5_persist\n")
+        append("metabolism,L2_surv,L3_surv,L4_surv,L5_surv,L2_persist,L3_persist,L4_persist,L5_persist,L2_persist_std,L3_persist_std,L4_persist_std,L5_persist_std\n")
         for (m in metabolisms) {
             val results = seeds.map { seed ->
                 val base = SimulationConfig.default(WIDTH, HEIGHT, seed = seed)
@@ -109,12 +127,13 @@ fun main(args: Array<String>) {
                 )
                 runOnce(scaled, ticks)
             }
-            val (surv, persist) = aggregate(results)
+            val agg = aggregate(results)
             append(m)
-            for (l in 3..5) append(',').append(round2(surv[l]!!))
-            for (l in 3..5) append(',').append(round2(persist[l]!!))
+            for (l in 2..5) append(',').append(round2(agg.survival[l]!!))
+            for (l in 2..5) append(',').append(round2(agg.persistMean[l]!!))
+            for (l in 2..5) append(',').append(round2(agg.persistStd[l]!!))
             append('\n')
-            println("  metabolism=$m  L4 persist=${round2(persist[4]!!)}  L5 persist=${round2(persist[5]!!)}")
+            println("  metabolism=$m  L5 persist=${round2(agg.persistMean[5]!!)}±${round2(agg.persistStd[5]!!)}")
         }
     }.let { File(outDir, "exp3_metabolism.csv").writeText(it) }
 

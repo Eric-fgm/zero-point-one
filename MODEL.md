@@ -87,12 +87,14 @@ Our Step-3 design document promised three emergent phenomena. Status in the curr
 Movement is now a blended **steering-vector** model (flee + hunt + cohesion + separation),
 which is what makes these behaviours composable.
 
-### Preliminary finding (8 seeds, 800 ticks — to be confirmed by the M4 sweep)
-- Herding + gradient foraging raise **L4** average persistence from ~366 to ~409 ticks (~+12%)
-  and herding alone increases surviving biomass (~97 → ~122 agents).
-- **L5 is unaffected** (~650 ticks either way): its prey (L4) collapses around tick ~400, after
-  which L5 merely starves on its initial reserves. The apex's fate is set by the level below it,
-  not by its own behaviour — a direct illustration of the 10% bottleneck.
+### Finding (confirmed by the M4 sweep — 30 seeds, 1500 ticks)
+- An early small-sample hint that herding extends **L4** persistence does **not** survive a larger
+  sample: across 30 seeds the four behaviour configurations differ by less than one standard
+  deviation (L4 ≈ 372–412 ticks, SD ≈ 77–117). The behaviours reshape the **spatial** structure
+  (clustering / shoaling) but do **not** change survival timing under the hard energy rule.
+- **L5 is unaffected** (~651–661 ticks, SD ~21) and tightly so: its prey (L4) collapses early, after
+  which L5 merely starves on its initial reserves. The apex's fate is set by the level below it, not
+  by its own behaviour — a direct illustration of the 10% bottleneck. See `ANALIZA.md` §2.2.
 
 ---
 

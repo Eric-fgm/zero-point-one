@@ -55,59 +55,92 @@ stada zamiast ruszyć dalej. Brakuje „popędu eksploracji".
 ## 2. Wyniki przemiatania parametrów (eksperymenty M4)
 
 Bezgłowy runner (`./gradlew :composeApp:sweep`) uruchamia symulację bez GUI dla siatki parametrów,
-uśrednia po wielu ziarnach i zapisuje CSV do `./results`. Poniżej wyniki dla świata 800×600,
-1500 kroków, 15 ziaren. **Metryka:** `persist` = średni ostatni krok, w którym poziom jeszcze
-istniał (im większy, tym dłużej poziom przetrwał).
+**uśrednia po wielu ziarnach** i zapisuje CSV do `./results`. Poniżej wyniki dla świata 800×600,
+1500 kroków, **30 ziaren**. **Metryka:** `persist` = średni ostatni krok, w którym poziom jeszcze
+istniał (im większy, tym dłużej poziom przetrwał). Wartości podajemy jako **średnia ± odchylenie
+standardowe** po 30 ziarnach; na wykresach odpowiadają im **wąsy/słupki błędu (±1 SD)**. Rozrzut jest
+tu kluczowy — pokazuje, czy różnica między ustawieniami to realny sygnał, czy mieści się w szumie.
+
+> Wykresy poniżej generuje `python3 scripts/plot_sweep.py` (czyta `results/*.csv`, zapisuje PNG do
+> `results/`). Wersja angielska pod raport: `python3 scripts/plot_sweep.py` → `*_en.png`;
+> wersja polska (osadzona tu): `--lang pl` → `*_pl.png`. Kolory zgodne z paletą GUI.
 
 ### 2.1. Przeżywalność a wydajność transferu energii (reguła 10%) — `exp1_yield.csv`
-| yield | L1 persist | L3 persist | L4 persist | L5 persist |
-|---|---|---|---|---|
-| 0.05 | 1013 | 327 | 377 | **610** |
-| 0.10 | 1072 | 386 | 373 | **671** |
-| 0.20 | 625 | 569 | 406 | **755** |
-| 0.30 | 524 | 601 | 494 | **855** |
+Trwałość (`persist`) jako **średnia ± SD** [ticki]:
 
-- **Kluczowy wynik:** trwałość drapieżnika szczytowego **rośnie monotonicznie** z wydajnością
-  transferu (610 → 855 kroków, gdy yield rośnie 5% → 30%). Im mniej energii ginie na każdym
-  szczeblu, tym dłużej utrzymuje się wierzchołek piramidy — bezpośrednie potwierdzenie wpływu reguły 10%.
-- **Niuans:** trwałość trawy (L1) **maleje** ze wzrostem yield (1013 → 524). Wydajniejsze
-  drapieżniki utrzymują więcej roślinożerców → silniejsza presja wypasu → trawa zostaje
-  przeżarta wcześniej. Czyli efektywniejszy transfer pomaga górze, ale obciąża podstawę.
+| yield | L1 | L2 | L3 | L4 | L5 |
+|---|---|---|---|---|---|
+| 0.05 | 1168±479 | 678±111 | 328±12 | 376±87 | **614±15** |
+| 0.08 | 828±559 | 593±74 | 368±51 | 396±81 | 637±18 |
+| 0.10 | 753±541 | 586±107 | 399±63 | 385±98 | 653±20 |
+| 0.15 | 826±564 | 593±91 | 507±140 | 423±88 | 709±38 |
+| 0.20 | 394±310 | 558±84 | 539±127 | 437±93 | 746±49 |
+| 0.25 | 689±586 | 525±73 | 569±111 | 436±125 | 822±75 |
+| 0.30 | 374±387 | 499±66 | 610±123 | 460±146 | **853±84** |
+
+- **Kluczowy wynik (mocny):** trwałość drapieżnika szczytowego (L5) **rośnie monotonicznie** z
+  wydajnością transferu — 614 → 853 kroków, gdy yield rośnie 5% → 30%. Wąsy błędu L5 są wąskie
+  (±15–84) względem tego wzrostu, więc to **realny sygnał**, a nie szum. Bezpośrednie potwierdzenie
+  reguły 10%: im mniej energii ginie na szczeblu, tym dłużej utrzymuje się wierzchołek piramidy.
+- **Drugi sygnał:** trwałość L3 również rośnie z yield (328 → 610) — wydajniejszy transfer zasila
+  środek łańcucha.
+- **Niuans (słaby, duży rozrzut):** trawa (L1) wykazuje *tendencję* spadkową przy wyższym yield
+  (wydajniejsze drapieżniki → więcej roślinożerców → silniejszy wypas), ale jej `persist` jest
+  **bardzo zaszumiony** — SD bywa rzędu samej średniej (np. 689±586). Traktujemy to jako trend, nie
+  jako pewny wniosek.
 - **Uwaga metodologiczna:** udział „przeżywających do końca" (kolumny `*_surv`) wynosi 0 dla
   wszystkich konsumentów przy każdym yield — bo bez odradzania trawy (pkt 1.2) **kolaps jest
   nieunikniony** do kroku 1500. Dlatego sensowną miarą jest *czas trwania*, a nie binarne
   przeżycie. To wprost motywuje usprawnienie `backgroundSpawn` (pkt 2 → „Planowane usprawnienia").
 
-### 2.2. Wpływ zachowań (stadność × żerowanie gradientowe) — `exp2_behaviours.csv`
-| herding | gradient | L4 persist | L5 persist |
-|---|---|---|---|
-| nie | nie | 325 | 671 |
-| nie | tak | 331 | 666 |
-| **tak** | nie | **416** | 660 |
-| tak | tak | 387 | 644 |
+![Trwałość poziomów a wydajność transferu energii](results/exp1_yield_pl.png)
 
-- **Stadność wyraźnie wydłuża trwałość L4** (325 → 416, ok. +28%); samo żerowanie gradientowe
-  ma niewielki wpływ. **L5 pozostaje bez zmian** (~644–671) — potwierdza wniosek: zachowania
-  pomagają środkowi łańcucha, ale **nie ratują wierzchołka**.
+### 2.2. Wpływ zachowań (stadność × żerowanie gradientowe) — `exp2_behaviours.csv`
+Trwałość (`persist`) jako **średnia ± SD** [ticki]:
+
+| herding | gradient | L2 | L3 | L4 | L5 |
+|---|---|---|---|---|---|
+| nie | nie | 630±138 | 378±53 | 372±117 | 661±21 |
+| nie | tak | 623±87 | 392±58 | 382±92 | 657±23 |
+| tak | nie | 538±108 | 368±37 | 399±97 | 653±23 |
+| tak | tak | 611±88 | 389±63 | 412±77 | 651±23 |
+
+- **Rewizja po zwiększeniu liczby ziaren (15 → 30):** przy pokazanym rozrzucie **żadna z czterech
+  konfiguracji nie różni się w sposób istotny**. Dla L4 wartości 372 → 412 mieszczą się w granicach
+  ±1 SD (~77–117), więc obserwowana wcześniej „przewaga stadności o ~28%" **była artefaktem małej
+  próby** — nie jest odporna na zmianę ziaren.
+- **L5 płaskie i pewne** (~651–661, SD ~21–23) — zachowania nie wpływają na trwałość wierzchołka.
+- **Wniosek:** stadność i żerowanie gradientowe zmieniają **strukturę przestrzenną** (klastry,
+  formowanie stad — patrz pkt 1.3), ale **nie zmieniają czasu przetrwania** pod twardą regułą energii.
+  To samo w sobie jest wynikiem: emergentne ruchy nie ratują populacji, gdy o losie decyduje bilans energii.
+
+![Wpływ zachowań na trwałość](results/exp2_behaviours_pl.png)
 
 ### 2.3. Wpływ metabolizmu — `exp3_metabolism.csv`
-| metabolizm × | L4 persist | L5 persist |
-|---|---|---|
-| 0.6 | 508 | **1152** |
-| 0.8 | 446 | 845 |
-| 1.0 | 451 | 651 |
-| 1.2 | 366 | 529 |
-| 1.4 | 311 | 460 |
+Trwałość (`persist`) jako **średnia ± SD** [ticki]:
 
-- **Najsilniejsza dźwignia.** Niższy koszt metaboliczny dramatycznie wydłuża trwałość górnych
-  poziomów (L5: 1152 przy ×0.6 vs 460 przy ×1.4 — relacja monotoniczna). To intuicyjne: mniejszy
-  koszt życia = wolniejsze głodzenie = dłuższe przetrwanie przy niedoborze pokarmu.
+| metabolizm × | L2 | L3 | L4 | L5 |
+|---|---|---|---|---|
+| 0.6 | 823±136 | 809±191 | 601±230 | **1136±63** |
+| 0.8 | 709±96 | 526±108 | 467±130 | 835±36 |
+| 1.0 | 614±56 | 395±77 | 406±82 | 651±21 |
+| 1.2 | 537±69 | 302±36 | 366±37 | 537±19 |
+| 1.4 | 514±72 | 246±10 | 314±26 | **459±16** |
 
-**Podsumowanie:** trwałość górnych poziomów rośnie z (a) wydajnością transferu i (b) niższym
-metabolizmem, a stadność pomaga warstwie środkowej. Żaden z czynników nie zapewnia jednak trwałego
-przetrwania L5 — pod twardą regułą 10% i bez odradzania bazy producentów **kolaps jest nieunikniony**,
-zmienia się jedynie jego tempo. To jest właśnie ilustracja niskiego prawdopodobieństwa przetrwania
-piątego poziomu troficznego.
+- **Najsilniejsza i najbardziej odporna dźwignia.** Niższy koszt metaboliczny dramatycznie wydłuża
+  trwałość wszystkich poziomów (L5: 1136 przy ×0.6 vs 459 przy ×1.4 — monotonicznie, a wąsy błędu
+  L5 nie nachodzą na siebie wzdłuż zakresu). Mniejszy koszt życia = wolniejsze głodzenie = dłuższe
+  przetrwanie przy niedoborze pokarmu.
+
+![Wpływ metabolizmu na trwałość](results/exp3_metabolism_pl.png)
+
+**Podsumowanie:** trwałość górnych poziomów rośnie **w sposób odporny** z (a) niższym metabolizmem
+(efekt najsilniejszy) i (b) wyższą wydajnością transferu energii (zwłaszcza dla L5 i L3). Natomiast
+**zachowania (stadność/gradient) nie są istotnym czynnikiem** trwałości — ich różnice toną w rozrzucie
+między ziarnami (to lekcja z przejścia 15 → 30 ziaren i pokazania ±SD). Żaden czynnik nie zapewnia
+trwałego przetrwania L5 — pod twardą regułą 10% i bez odradzania bazy producentów **kolaps jest
+nieunikniony**, zmienia się jedynie jego tempo. To jest właśnie ilustracja niskiego prawdopodobieństwa
+przetrwania piątego poziomu troficznego.
 
 ---
 

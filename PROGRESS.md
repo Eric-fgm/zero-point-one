@@ -94,13 +94,16 @@ Producers (L1) photosynthesise (regrow energy each tick) up to a carrying capaci
 - **M4 — Experiments** *(in progress — chose Option B)*:
   - *Behaviours added (done):* steering-vector movement with **herding** (cohesion + separation)
     and **gradient foraging**, both toggleable (`BehaviorConfig` + sidebar switches). Closes the
-    Step-3 emergent-behaviour gap. See `MODEL.md` for the preliminary finding.
+    Step-3 emergent-behaviour gap. See `MODEL.md` for the finding.
   - *Sweep runner (done):* headless experiment runner `experiments/Sweep.kt` + Gradle task
     `./gradlew :composeApp:sweep` (no GUI; uses `Engine.initialize()/advance()`). Runs three
     experiments — survival/persistence vs. energy-transfer yield, behaviours (herding × gradient),
-    and metabolism — averaged over seeds, writing `results/exp{1,2,3}*.csv`.
-    Key results (in `ANALIZA.md` §2): L5 persistence rises monotonically with yield (610→855 ticks
-    for 5%→30%) and with lower metabolism (×0.6→1152, ×1.4→460); herding extends L4 (~+28%) but not L5.
+    and metabolism — for all 5 levels, reporting **mean ± SD over seeds**, writing `results/exp{1,2,3}*.csv`.
+    Charts: `python3 scripts/plot_sweep.py` (± 1 SD error bars; `--lang pl` for Polish) → `results/*.png`.
+    Key results (in `ANALIZA.md` §2, 30 seeds / 1500 ticks): L5 persistence rises monotonically with
+    yield (614→853 ticks for 5%→30%) and most strongly with lower metabolism (×0.6→1136, ×1.4→459).
+    **Behaviours are NOT a robust lever** — at 30 seeds the four configs differ by < ±1 SD (the earlier
+    "herding +28% on L4" was a small-sample artefact); they reshape spatial structure, not survival timing.
     Under a non-regenerating producer base, long-run survival of all consumer levels → 0 (collapse
     inevitable) — only its *timing* changes.
   - *Optional later:* see `ANALIZA.md` §3 (background grass spawn, correlated wander/dispersal).
